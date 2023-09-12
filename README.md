@@ -1,2 +1,2 @@
 # insomniac-model
-insomniac model format research
+insomniac games model format research
