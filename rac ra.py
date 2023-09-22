@@ -172,32 +172,32 @@ def read_bits_old(byte_list, num_bits):
 	return results
 
 def twos_complement(val, num_bits):
-    if (val & (1 << (num_bits - 1))) != 0:
-        val = val - (1 << num_bits)
-    return val
+	if (val & (1 << (num_bits - 1))) != 0:
+		val = val - (1 << num_bits)
+	return val
 
 def read_bits(byte_list, num_bits):
-    results = []
-    result = 0
-    bit_count = 0
+	results = []
+	result = 0
+	bit_count = 0
 
-    for byte in byte_list:
-        for i in range(7, -1, -1):
-            bit = (byte >> i) & 1
-            result = (result << 1) | bit
-            bit_count += 1
+	for byte in byte_list:
+		for i in range(7, -1, -1):
+			bit = (byte >> i) & 1
+			result = (result << 1) | bit
+			bit_count += 1
 
-            if bit_count == num_bits:
-                result = twos_complement(result, num_bits)
-                results.append(result)
-                result = 0
-                bit_count = 0
+			if bit_count == num_bits:
+				result = twos_complement(result, num_bits)
+				results.append(result)
+				result = 0
+				bit_count = 0
 
-    if bit_count > 0:
-        result = twos_complement(result, num_bits)
-        results.append(result)
+	if bit_count > 0:
+		result = twos_complement(result, num_bits)
+		results.append(result)
 
-    return results
+	return results
 
 # Example usage
 byte_list = [0b10101010, 0b11001100, 0b11110000, 0b00001111]
@@ -249,8 +249,11 @@ class _ModelAnimMorphInfo():
 				self.morphDataLength = None	
 				self.morphIndicesOffset = None
 				self.morphIndicesLength = None
-				self.morphVertexStride = None
-				self.morphVertexComponentSize = None
+				self.morphPackingInfo = None
+				self.morphPositionScale  = None
+				self.morphPositionBias = None
+				self.morphNormalScale  = None
+				self.morphNormalBias = None
 				self.morphSubsetInfoList = []
 		class _morphSubsetInfo():
 			def __init__(self):
@@ -262,7 +265,14 @@ class _ModelAnimMorphInfo():
 		class _morphDataTable():
 			def __init__(self, file_object):
 				self.vertexCount = read_ushort(file_object)
-				self.indicesCount = read_uint(file_object)  
+				self.indicesCount = read_uint(file_object) 
+		class _morphPackingInfo():
+			def __init__(self, file_object):
+				self.numElements = read_byte(file_object)
+				self.bitsPerElement = read_byte(file_object)
+				self.bitsPerElementComponent = read_byte(file_object)
+				self.null = read_byte(file_object)
+				 
 				
 
 		# print_here(file_object)
@@ -291,29 +301,13 @@ class _ModelAnimMorphInfo():
 			morphNameOffset = read_uint(file_object)
 			morphDataOffset = read_uint(file_object)                            #rel to ModelAnimMorphData
 			morphIndicesOffset = read_uint(file_object)                         #rel to ModelAnimMorphIndices
-			# file_object.write(bytearray(struct.pack('f', 0)))
-			# file_object.write(bytearray(struct.pack('f', 0)))
-
-
-			# print("{0:04d} - {1:s}".format((x+1), getString(file_object, morphNameOffset)))
-			# read_fixed_byte_string(file_object, 0x04, 1, 1)
-
-			# 02 0c 04 00	0 00000100 00011000 00001000 0000000	24 bits / 08 bits per component
-			# 02 0f 05 00	0 00000100 00011110 00001010 0000000	30 bits / 10 bits per component
-			# 02 12 06 00	0 00000100 00100100 00001100 0000000	36 bits / 12 bits per component
-			# 02 15 07 00	0 00000100 00101010 00001110 0000000	42 bits / 14 bits per component
-			# 02 18 08 00	0 00000100 00110000 00010000 0000000	48 bits / 16 bits per component
-			# 02 1b 09 00	0 00000100 00110110 00010010 0000000	56 bits / 18 bits per component
-			# 02 1e 0a 00	0 00000100 00111100 00010100 0000000	60 bits / 20 bits per componnet
+			morphPackingInfo = _morphPackingInfo(file_object)
 			
-			morphPackedVertexInfo = read_uint(file_object)							#would be easeir to read if eveything wasnt shifted down 1 bit
-			morphVertexStride = (morphPackedVertexInfo & 0x7F80) >> 7				#strides in bits
-			morphVertexComponentSize = (morphPackedVertexInfo & 0x7F8000) >> 15		#bits per vertex component
 			
-			morphPosMax = read_float(file_object)										#bounding?
-			morphPosMin = read_float(file_object)
-			morphNrmMax = read_float(file_object)
-			morphNrmMin = read_float(file_object)
+			morphPositionScale = read_float(file_object)										#bounding?
+			morphPositionBias = read_float(file_object)
+			morphNormalScale = read_float(file_object)
+			morphNormalBias = read_float(file_object)
 
 			# print(morphPosMax, morphPosMin, morphNrmMax, morphNrmMin)
 
@@ -360,9 +354,13 @@ class _ModelAnimMorphInfo():
 			self.morphInfoList[x].morphDataLength = morphDataLength
 			self.morphInfoList[x].morphIndicesOffset = morphIndicesOffset
 			self.morphInfoList[x].morphIndicesLength = morphIndicesLength
-			self.morphInfoList[x].morphVertexStride = morphVertexStride
-			self.morphInfoList[x].morphVertexComponentSize = morphVertexComponentSize
-			self.morphInfoList[x].morphSubsetInfoList = morphSubsetInfoList		
+			self.morphInfoList[x].morphPackingInfo = morphPackingInfo
+			self.morphInfoList[x].morphPositionScale  = morphPositionScale 
+			self.morphInfoList[x].morphPositionBias = morphPositionBias
+			self.morphInfoList[x].morphNormalScale  = morphNormalScale 
+			self.morphInfoList[x].morphNormalBias = morphNormalBias
+			self.morphInfoList[x].morphSubsetInfoList = morphSubsetInfoList
+
 class _ModelAnimZivaData():
 	def __init__(self, section, file_object):
 		pass
@@ -503,12 +501,6 @@ class _ModelLookBuilt():
 				self.modelLookNameOffset = read_uint(file_object)
 		self.ModelLookBuiltList = [_ModelLookBuiltTable(file_object) for x in range(len(ModelLook.ModelLookList))]
 
-		print_hex(section.offset)
-		for o in self.ModelLookBuiltList:
-			# print_hex(o.ukwOffset)
-			file_object.seek(section.offset + o.ukwListOffset7)
-			read_fixed_byte_string(file_object, 0x10, 1, 1)
-
 		#more data after here based on list data, skipping
 class _ModelLookGroup():
 	def __init__(self, section, file_object):
@@ -570,8 +562,8 @@ class _ModelSkinBatch():
 		class _ModelSkinBatchTable():
 			def __init__(self, file_object):
 				self.skinDataOffset = read_uint(file_object)
-				self.bonesProduceSkinOffset = read_uint(file_object)	#boneMap
-				self.bonesProduceSkinCount = read_ushort(file_object)
+				self.skinJointRemapOffset = read_uint(file_object)
+				self.skinJointRemapCount = read_ushort(file_object)
 				self.ukw = read_ushort(file_object)
 				self.skinVertexCount = read_ushort(file_object)
 				self.skinVertexIndex = read_ushort(file_object)
@@ -809,9 +801,8 @@ class _fb7f6a48():
 		pass
 
 filePath = r"D:\models\ripped\ratchet and clank rift apart\characters\hero\hero_ratchet\hero_ratchet.model"
+# filePath = r"C:\Users\Xavier\Downloads\New folder\New folder\hero_ratchet_bangle_head_default.model-edit"
 # filePath = r"D:\models\ripped\ratchet and clank rift apart\characters\npc\npc_helper_bot\npc_helper_bot.model"
-# filePath = r"C:\Users\Xavier\Downloads\New folder\hero_ratchet_bangle_head_default.model-edit"
-# filePath = r"D:\scripts\blender\ra model\hero_rivet\hero_rivet.model"
 f = open(filePath, "rb+")
 
 _1TAD = read_fixed_string(f, 4)
@@ -899,54 +890,53 @@ for section in sectionTableList:
 
 	
 
-# for morphInfo in ModelAnimMorphInfo.morphInfoList:
-# 	print(morphInfo.morphName)
-# 	print("morphDataOffset: {0:8x}	morphIndicesOffset: {1:8x}".format(morphInfo.morphDataOffset, morphInfo.morphIndicesOffset))
-# 	print("morphDataLength: {0:8x}	morphIndicesLength: {1:8x}".format(morphInfo.morphDataLength, morphInfo.morphIndicesLength))
-# 	print("morphVertexStride: {0:6d}   morphVertexComponentSize: {1:02d}".format(morphInfo.morphVertexStride, morphInfo.morphVertexComponentSize))
-# 	for morphSubsetInfo in morphInfo.morphSubsetInfoList:
-# 		print("{0:2d} {1:8x} {2:8x} {3:4x}".format(morphSubsetInfo.morphSubsetId, morphSubsetInfo.morphSubsetVertexOffset, morphSubsetInfo.morphSubsetIndicesOffset, morphSubsetInfo.morphSubsetVertexCount))
+for morphInfo in ModelAnimMorphInfo.morphInfoList:
+	print(morphInfo.morphName)
+	print("morphDataOffset: {0:8x}	morphIndicesOffset: {1:8x}".format(morphInfo.morphDataOffset, morphInfo.morphIndicesOffset))
+	print("morphDataLength: {0:8x}	morphIndicesLength: {1:8x}".format(morphInfo.morphDataLength, morphInfo.morphIndicesLength))	
+	print("stride: {3:4d}	numElements: {0:4d}	bitsPerElement:	{1:4d}	bitsPerElementComponent: {2:4d}".format(morphInfo.morphPackingInfo.numElements, morphInfo.morphPackingInfo.bitsPerElement, morphInfo.morphPackingInfo.bitsPerElementComponent, (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)))
+	print("positionScaleRange:	[{0}, {1}]".format(morphInfo.morphPositionScale, morphInfo.morphPositionBias))
+	print("normalScaleRange:	[{0}, {1}]".format(morphInfo.morphNormalScale, morphInfo.morphNormalBias))
+	for morphSubsetInfo in morphInfo.morphSubsetInfoList:
+		print("{0:2d} {1:8x} {2:8x} {3:4x}".format(morphSubsetInfo.morphSubsetId, morphSubsetInfo.morphSubsetVertexOffset, morphSubsetInfo.morphSubsetIndicesOffset, morphSubsetInfo.morphSubsetVertexCount))
 		
-# 		# morphSubsetVerticesList = []
-# 		# f.seek(ModelAnimMorphData.ModelAnimMorphDataOffset + morphInfo.morphDataOffset + morphSubsetInfo.morphSubsetVertexOffset)
-# 		# for morphSubsetDataTableIndex, morphDataTable in enumerate(morphSubsetInfo.morphDataTableList):
-# 		# 	bytesToRead = math.ceil((morphInfo.morphVertexStride * morphDataTable.vertexCount) / 8)
-# 		# 	print("{0:4x} {1:4x} {2:4d}".format(morphDataTable.vertexCount, bytesToRead, morphSubsetDataTableIndex))
-# 		# 	# print_here(f)
-# 		# 	packedVertices = bytearray(f.read(bytesToRead)) ; alignOffset(f, tell(f), 0x04)
-# 		# 	unpackedVertices = read_bits_old(packedVertices, morphInfo.morphVertexComponentSize)
-# 		# 	# unpackedVertices = read_bits(packedVertices, morphInfo.morphVertexComponentSize)
-# 		# 	deltaVertices = [unpackedVertices[i:i+3] for i in range(0, morphDataTable.vertexCount * 3, 3)]
-# 		# 	for deltaVertex in deltaVertices:
-# 		# 		# if morphSubsetInfo.morphSubsetId == 26: print(deltaVertex)
-# 		# 		morphSubsetVerticesList.append(deltaVertex)
-# 		# # if morphSubsetInfo.morphSubsetId == 26 and morphInfo.morphVertexStride == 48:
-# 		# # 	for o in morphSubsetVerticesList:
-# 		# # 		print(o)
+		morphSubsetVerticesList = []
+		f.seek(ModelAnimMorphData.ModelAnimMorphDataOffset + morphInfo.morphDataOffset + morphSubsetInfo.morphSubsetVertexOffset)
+		for morphSubsetDataTableIndex, morphDataTable in enumerate(morphSubsetInfo.morphDataTableList):
+			morphVertexStride = (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)
+
+			bytesToRead = math.ceil((morphVertexStride * morphDataTable.vertexCount) / 8)
+			print("{0:8x} {1:4x} {2:4x} {3:4d}".format((tell(f)), bytesToRead, morphDataTable.vertexCount, morphSubsetDataTableIndex))
+			packedVertices = bytearray(f.read(bytesToRead)) ; alignOffset(f, tell(f), 0x04)
+			unpackedVertices = read_bits_old(packedVertices, morphInfo.morphPackingInfo.bitsPerElement)
+			# deltaPositions = [unpackedVertices[i:i+3] for i in range(0, morphDataTable.vertexCount * 3, 3)]
+			# for deltaVertex in deltaVertices:
+			# 	# if morphSubsetInfo.morphSubsetId == 26: print(deltaVertex)
+			# 	morphSubsetVerticesList.append(deltaVertex)
 
 
 			
-# 		morphSubsetIndicesList = []
-# 		f.seek(ModelAnimMorphIndices.ModelAnimMorphIndicesOffset + morphInfo.morphIndicesOffset + morphSubsetInfo.morphSubsetIndicesOffset)
-# 		for morphSubsetDataTableIndex, morphDataTable in enumerate(morphSubsetInfo.morphDataTableList):
-# 			vertexIndex = 0xa00 * morphSubsetDataTableIndex
-# 			print("{0:4x} {1:4x} {2:4d}".format(vertexIndex, morphDataTable.indicesCount, morphSubsetDataTableIndex))
+		morphSubsetIndicesList = []
+		f.seek(ModelAnimMorphIndices.ModelAnimMorphIndicesOffset + morphInfo.morphIndicesOffset + morphSubsetInfo.morphSubsetIndicesOffset)
+		for morphSubsetDataTableIndex, morphDataTable in enumerate(morphSubsetInfo.morphDataTableList):
+			vertexIndex = 0xa00 * morphSubsetDataTableIndex
+			# print("{0:4x} {1:4x} {2:4d}".format(vertexIndex, morphDataTable.indicesCount, morphSubsetDataTableIndex))
 
-# 			for x in range(morphDataTable.indicesCount):
-# 				vertexSkip = read_ushort(f)
-# 				vertexRead = read_ushort(f)
-# 				if vertexRead == 0x00: vertexRead = 0x20
+			for x in range(morphDataTable.indicesCount):
+				vertexSkip = read_ushort(f)
+				vertexRead = read_ushort(f)
+				if vertexRead == 0x00: vertexRead = 0x20
 
-# 				vertexIndex += vertexSkip
-# 				vertexRange = vertexRead
-# 				vertexEndIndex = vertexRange + vertexIndex
+				vertexIndex += vertexSkip
+				vertexRange = vertexRead
+				vertexEndIndex = vertexRange + vertexIndex
 
-# 				for i in range(vertexIndex, vertexEndIndex):
-# 					morphSubsetIndicesList.append(i)
+				for i in range(vertexIndex, vertexEndIndex):
+					morphSubsetIndicesList.append(i)
 
-# 				if morphSubsetInfo.morphSubsetId == 26: print("[", vertexIndex, ", ", vertexRange, "],")
-# 				vertexIndex = vertexEndIndex
-# 		if morphSubsetInfo.morphSubsetId == 26: print_hex(len(morphSubsetIndicesList))
+				if morphSubsetInfo.morphSubsetId == 26: print("[", vertexIndex, ", ", vertexRange, "],")
+				vertexIndex = vertexEndIndex
+		# if morphSubsetInfo.morphSubsetId == 26: print_hex(len(morphSubsetIndicesList))
 
 
 # print("bone count: ", ModelJointHierarchy.ModelJointCount)
@@ -1032,8 +1022,8 @@ for x in range(len(ModelSubset.ModelSubsetList)):
 		modelSkinBatch = ModelSkinBatch.ModelSkinBatchList[x]
 		# print("skinDataOffset: {0:08x}  ukw: {1:04x}  skinVertexCount: {2:04x}  skinVertexIndex: {3:04x}".format((modelSkinBatch.skinDataOffset + ModelSkinData.ModelSkinDataOffset), modelSkinBatch.ukw, modelSkinBatch.skinVertexCount, modelSkinBatch.skinVertexIndex))
 
-		f.seek (modelSkinBatch.bonesProduceSkinOffset)
-		boneMap = [read_ushort(f) for y in range(modelSkinBatch.bonesProduceSkinCount)] if (modelSkinBatch.bonesProduceSkinCount > 0) else [y for y in range(ModelJointHierarchy.ModelJointCount)]
+		f.seek (modelSkinBatch.skinJointRemapOffset)
+		boneMap = [read_ushort(f) for y in range(modelSkinBatch.skinJointRemapCount)] if (modelSkinBatch.skinJointRemapCount > 0) else [y for y in range(ModelJointHierarchy.ModelJointCount)]
 
 		f.seek(modelSkinBatch.skinDataOffset + ModelSkinData.ModelSkinDataOffset)
 		j = 0
