@@ -119,23 +119,22 @@ def getString(file_object, stringOffset):
 	return s
 def buildMorphs(mesh_obj, ModelAnimMorphInfo, subsetId):
 	morphIndex = 0
-	for x in range(1):
-		morphInfo = ModelAnimMorphInfo.morphInfoList[x]
-#   for morphInfo in ModelAnimMorphInfo.morphInfoList:
+#   for x in range(2):
+#   	morphInfo = ModelAnimMorphInfo.morphInfoList[x]
+	for morphInfo in ModelAnimMorphInfo.morphInfoList:
 		if mesh_obj.data.shape_keys == None:
 			mesh_obj.shape_key_add(name='Basis',from_mix=False)
 		shape_key = mesh_obj.shape_key_add(name=morphInfo.morphName,from_mix=False)
-		morphIndex += 1
-
-		print(morphInfo.morphName)
-		print("morphDataOffset: {0:8x}  morphIndicesOffset: {1:8x}".format(morphInfo.morphDataOffset, morphInfo.morphIndicesOffset))
-		print("morphDataLength: {0:8x}  morphIndicesLength: {1:8x}".format(morphInfo.morphDataLength, morphInfo.morphIndicesLength))	
-		print("stride: {3:4d}   numElements: {0:4d} bitsPerElement: {1:4d}  bitsPerElementComponent: {2:4d}".format(morphInfo.morphPackingInfo.numElements, morphInfo.morphPackingInfo.bitsPerElement, morphInfo.morphPackingInfo.bitsPerElementComponent, (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)))
-		print("positionScaleRange:  [{0}, {1}]".format(morphInfo.morphPositionScale, morphInfo.morphPositionBias))
-		print("normalScaleRange:	[{0}, {1}]".format(morphInfo.morphNormalScale, morphInfo.morphNormalBias))
+		
+#		print(morphInfo.morphName)
+#		print("morphDataOffset: {0:8x}  morphIndicesOffset: {1:8x}".format(morphInfo.morphDataOffset, morphInfo.morphIndicesOffset))
+#		print("morphDataLength: {0:8x}  morphIndicesLength: {1:8x}".format(morphInfo.morphDataLength, morphInfo.morphIndicesLength))	
+#		print("stride: {3:4d}   numElements: {0:4d} bitsPerElement: {1:4d}  bitsPerElementComponent: {2:4d}".format(morphInfo.morphPackingInfo.numElements, morphInfo.morphPackingInfo.bitsPerElement, morphInfo.morphPackingInfo.bitsPerElementComponent, (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)))
+#		print("positionScaleRange:  [{0}, {1}]".format(morphInfo.morphPositionScale, morphInfo.morphPositionBias))
+#		print("normalScaleRange:	[{0}, {1}]".format(morphInfo.morphNormalScale, morphInfo.morphNormalBias))
 		for morphSubsetInfo in morphInfo.morphSubsetInfoList:
 			if morphSubsetInfo.morphSubsetId == subsetId:
-				print("{0:2d} {1:8x} {2:8x} {3:4x}".format(morphSubsetInfo.morphSubsetId, morphSubsetInfo.morphSubsetVertexOffset, morphSubsetInfo.morphSubsetIndicesOffset, morphSubsetInfo.morphSubsetVertexCount))
+#				print("{0:2d} {1:8x} {2:8x} {3:4x}".format(morphSubsetInfo.morphSubsetId, morphSubsetInfo.morphSubsetVertexOffset, morphSubsetInfo.morphSubsetIndicesOffset, morphSubsetInfo.morphSubsetVertexCount))
 
 				morphSubsetVerticesList = []
 				f.seek(ModelAnimMorphData.ModelAnimMorphDataOffset + morphInfo.morphDataOffset + morphSubsetInfo.morphSubsetVertexOffset)
@@ -143,20 +142,21 @@ def buildMorphs(mesh_obj, ModelAnimMorphInfo, subsetId):
 					morphVertexStride = (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)
 
 					bytesToRead = math.ceil((morphVertexStride * morphDataTable.vertexCount) / 8)
-#   				print("{0:8x} {1:4x} {2:4x} {3:4d}".format((tell(f)), bytesToRead, morphDataTable.vertexCount, morphSubsetDataTableIndex))
+#					print("{0:8x} {1:4x} {2:4x} {3:4d}".format((tell(f)), bytesToRead, morphDataTable.vertexCount, morphSubsetDataTableIndex))
 					packedVertices = bytearray(f.read(bytesToRead)) ; alignOffset(f, tell(f), 0x04)
 					unpackedVertices = read_bits(packedVertices, morphInfo.morphPackingInfo.bitsPerElementComponent)
 					deltaPositions = [unpackedVertices[i:i+3] for i in range(0, len(unpackedVertices), 6)]  #this is assuming there are only two elements
 					deltaNormals = [unpackedVertices[i+3:i+6] for i in range(0, len(unpackedVertices), 6)]
 
-					for x, o in enumerate(deltaPositions):
-						# morphSubsetVerticesList.append(Vector(o) * morphInfo.morphPositionScale + Vector((morphInfo.morphPositionBias,morphInfo.morphPositionBias,morphInfo.morphPositionBias)))
-						
-						vx = o[0] * morphInfo.morphPositionScale + morphInfo.morphPositionBias
-						vy = o[1] * morphInfo.morphPositionScale + morphInfo.morphPositionBias
-						vz = o[2] * morphInfo.morphPositionScale + morphInfo.morphPositionBias
-			
-						morphSubsetVerticesList.append((vx,vy,vz))
+					for o in deltaPositions:
+						if len(o) == 3:
+							vx = o[0] * morphInfo.morphPositionScale + morphInfo.morphPositionBias
+							vy = o[1] * morphInfo.morphPositionScale + morphInfo.morphPositionBias
+							vz = o[2] * morphInfo.morphPositionScale + morphInfo.morphPositionBias
+							
+							morphSubsetVerticesList.append((vx,vy,vz))
+
+					#print(len(deltaPositions))
 
 				morphSubsetIndicesList = []
 				f.seek(ModelAnimMorphIndices.ModelAnimMorphIndicesOffset + morphInfo.morphIndicesOffset + morphSubsetInfo.morphSubsetIndicesOffset)
@@ -179,21 +179,13 @@ def buildMorphs(mesh_obj, ModelAnimMorphInfo, subsetId):
 #   					if morphSubsetInfo.morphSubsetId == 26: print("[", vertexIndex, ", ", vertexRange, "],")
 						vertexIndex = vertexEndIndex
 				# if morphSubsetInfo.morphSubsetId == 26: print_hex(len(morphSubsetIndicesList))
-		
-				print(morphIndex)
-				print(shape_key.name)
-				print(len(shape_key.data))
-				print(len(morphSubsetIndicesList))
-				print(len(morphSubsetVerticesList))
 
-				for x, vertexIndex in enumerate(morphSubsetIndicesList):
-					pass
-#   				print(shape_key.data[vertexIndex].co)
-					shape_key.data[vertexIndex].co.x += morphSubsetVerticesList[x][0]
-					shape_key.data[vertexIndex].co.y += morphSubsetVerticesList[x][1]
-					shape_key.data[vertexIndex].co.z += morphSubsetVerticesList[x][2]
-#   				print(Vector(morphSubsetVerticesList[x]))
-				shape_key.value = 1.0
+				for i, vertexIndex in enumerate(morphSubsetIndicesList):
+					#print(shape_key.data[vertexIndex])
+					shape_key.data[vertexIndex].co.x += morphSubsetVerticesList[i][0]
+					shape_key.data[vertexIndex].co.y += morphSubsetVerticesList[i][1]
+					shape_key.data[vertexIndex].co.z += morphSubsetVerticesList[i][2]
+				shape_key.value = 0.0
 
 
 
@@ -873,10 +865,9 @@ subsetSelectionList = [26]
 
 subsetSelection = ModelLook.ModelLookList[lookSelection][lodSelection]
 
-#for x in range(subsetSelection.subsetIndex, (subsetSelection.subsetIndex + subsetSelection.subsetCount)):
+for x in range(subsetSelection.subsetIndex, (subsetSelection.subsetIndex + subsetSelection.subsetCount)):
 #for x in range(len(ModelSubset.ModelSubsetList)):
-for x in subsetSelectionList:
-	subsetId = x
+#for x in subsetSelectionList:
 	modelSubset = ModelSubset.ModelSubsetList[x]	
 	
 	#print("0x{0:04x}".format(x))
@@ -938,6 +929,7 @@ for x in subsetSelectionList:
 	# mesh_obj.shape_key_add(name='Basis1',from_mix=False)
 	# print(len(mesh_obj.data.shape_keys.key_blocks))
 
-	buildMorphs(mesh_obj, ModelAnimMorphInfo, 26)
+	subsetId = x
+	buildMorphs(mesh_obj, ModelAnimMorphInfo, subsetId)
 
 print("Last read @ {0:x}".format(tell(f)))
