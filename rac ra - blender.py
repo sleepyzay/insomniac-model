@@ -120,13 +120,13 @@ def getString(file_object, stringOffset):
 def buildMorphs(mesh_obj, ModelAnimMorphInfo, subsetId):
 	morphIndex = 0
 	for morphInfo in ModelAnimMorphInfo.morphInfoList:
-		print(morphInfo.morphName)
-		print("morphSubsets: " + ' '.join(map(str, morphInfo.morphSubsetIdList)))
-		print("morphDataOffset: {0:8x}  morphIndicesOffset: {1:8x}".format(morphInfo.morphDataOffset, morphInfo.morphIndicesOffset))
-		print("morphDataLength: {0:8x}  morphIndicesLength: {1:8x}".format(morphInfo.morphDataLength, morphInfo.morphIndicesLength))	
-		print("stride: {3:4d}   numElements: {0:4d}   bitsPerElement: {1:4d}   bitsPerElementComponent: {2:4d}".format(morphInfo.morphPackingInfo.numElements, morphInfo.morphPackingInfo.bitsPerElement, morphInfo.morphPackingInfo.bitsPerElementComponent, (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)))
-		print("positionScaleBias:   [{0}, {1}]".format(morphInfo.morphPositionScale, morphInfo.morphPositionBias))
-		print("normalScaleBias: [{0}, {1}]".format(morphInfo.morphNormalScale, morphInfo.morphNormalBias))
+		#print(morphInfo.morphName)
+		#print("morphSubsets: " + ' '.join(map(str, morphInfo.morphSubsetIdList)))
+		#print("morphDataOffset: {0:8x}  morphIndicesOffset: {1:8x}".format(morphInfo.morphDataOffset, morphInfo.morphIndicesOffset))
+		#print("morphDataLength: {0:8x}  morphIndicesLength: {1:8x}".format(morphInfo.morphDataLength, morphInfo.morphIndicesLength))	
+		#print("stride: {3:4d}   numElements: {0:4d}   bitsPerElement: {1:4d}   bitsPerElementComponent: {2:4d}".format(morphInfo.morphPackingInfo.numElements, morphInfo.morphPackingInfo.bitsPerElement, morphInfo.morphPackingInfo.bitsPerElementComponent, (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)))
+		#print("positionScaleBias:   [{0}, {1}]".format(morphInfo.morphPositionScale, morphInfo.morphPositionBias))
+		#print("normalScaleBias: [{0}, {1}]".format(morphInfo.morphNormalScale, morphInfo.morphNormalBias))
 		
 		if subsetId in morphInfo.morphSubsetIdList:
 			if mesh_obj.data.shape_keys == None:
@@ -138,7 +138,7 @@ def buildMorphs(mesh_obj, ModelAnimMorphInfo, subsetId):
 		
 			for morphSubsetInfo in morphInfo.morphSubsetInfoList:
 				if morphSubsetInfo.morphSubsetId == subsetId:
-					print("{0:2d} {1:8x} {2:8x} {3:4x}".format(morphSubsetInfo.morphSubsetId, morphSubsetInfo.morphSubsetVertexOffset, morphSubsetInfo.morphSubsetIndicesOffset, morphSubsetInfo.morphSubsetVertexCount))
+					#print("{0:2d} {1:8x} {2:8x} {3:4x}".format(morphSubsetInfo.morphSubsetId, morphSubsetInfo.morphSubsetVertexOffset, morphSubsetInfo.morphSubsetIndicesOffset, morphSubsetInfo.morphSubsetVertexCount))
 
 					morphSubsetVerticesList = []
 					f.seek(ModelAnimMorphData.ModelAnimMorphDataOffset + morphInfo.morphDataOffset + morphSubsetInfo.morphSubsetVertexOffset)
@@ -146,7 +146,7 @@ def buildMorphs(mesh_obj, ModelAnimMorphInfo, subsetId):
 						morphVertexStride = (morphInfo.morphPackingInfo.bitsPerElement * morphInfo.morphPackingInfo.numElements)
 						bytesToRead = math.ceil((morphVertexStride * morphDataTable.vertexCount) / 8)
 						
-						print("{0:8x} {1:4x} {2:4x} {3:4d}".format((tell(f)), bytesToRead, morphDataTable.vertexCount, morphSubsetDataTableIndex))
+						#print("{0:8x} {1:4x} {2:4x} {3:4d}".format((tell(f)), bytesToRead, morphDataTable.vertexCount, morphSubsetDataTableIndex))
 						
 						packedVertices = bytearray(f.read(bytesToRead)) ; alignOffset(f, tell(f), 0x04)
 						unpackedVertices = read_bits(packedVertices, morphInfo.morphPackingInfo.bitsPerElementComponent)
@@ -186,7 +186,6 @@ class _sectionTable():
 		self.hash = read_uint(file_object)
 		self.offset = read_uint(file_object)
 		self.length = read_uint(file_object)
-
 class _ModelAnimDynamicsDef():
 	def __init__(self, section, file_object):
 		pass
@@ -224,6 +223,7 @@ class _ModelAnimMorphInfo():
 				self.morphPositionBias = None
 				self.morphNormalScale  = None
 				self.morphNormalBias = None
+				self.morphSubsetIdList = []
 				self.morphSubsetInfoList = []
 		class _morphSubsetInfo():
 			def __init__(self):
@@ -242,9 +242,7 @@ class _ModelAnimMorphInfo():
 				self.bitsPerElement = read_byte(file_object)
 				self.bitsPerElementComponent = read_byte(file_object)
 				self.null = read_byte(file_object)
-				 
-				
-
+		
 		# print_here(file_object)
 		ukw = read_uint(file_object)		#null / offset?
 		morphBuffersLength = read_uint(file_object) 	#length of data + indices
@@ -273,14 +271,11 @@ class _ModelAnimMorphInfo():
 			morphIndicesOffset = read_uint(file_object) 						#rel to ModelAnimMorphIndices
 			morphPackingInfo = _morphPackingInfo(file_object)
 			
-			
 			morphPositionScale = read_float(file_object)										#bounding?
 			morphPositionBias = read_float(file_object)
 			morphNormalScale = read_float(file_object)
 			morphNormalBias = read_float(file_object)
-
-			# print(morphPosMax, morphPosMin, morphNrmMax, morphNrmMin)
-
+			
 			morphSubsetCount =  			read_ushort(file_object)
 			morphSubsetInfoLength = 		read_ushort(file_object)											#rel to morphSubsetIdList's offset
 
@@ -329,8 +324,8 @@ class _ModelAnimMorphInfo():
 			self.morphInfoList[x].morphPositionBias = morphPositionBias
 			self.morphInfoList[x].morphNormalScale  = morphNormalScale 
 			self.morphInfoList[x].morphNormalBias = morphNormalBias
-			self.morphInfoList[x].morphSubsetInfoList = morphSubsetInfoList
 			self.morphInfoList[x].morphSubsetIdList = morphSubsetIdList
+			self.morphInfoList[x].morphSubsetInfoList = morphSubsetInfoList
 class _ModelAnimZivaData():
 	def __init__(self, section, file_object):
 		pass
@@ -376,10 +371,10 @@ class _ModelJoint():
 	def __init__(self, section, file_object):
 		class _ModelJointTable():
 			def __init__(self, file_object):
-				self.parentID = read_ushort(file_object)
-				self.childID = read_ushort(file_object)
-				self.siblingID = read_ushort(file_object)
-				self.ukwID = read_ushort(file_object)
+				self.parentId = read_ushort(file_object)
+				self.childId = read_ushort(file_object)
+				self.siblingId = read_ushort(file_object)
+				self.ukwId = read_ushort(file_object)
 				self.jointNameHash = read_uint(file_object)
 				self.jointNameOffset = read_uint(file_object)
 		self.ModelJointList = [_ModelJointTable(file_object) for x in range(section.length // 0x10)]		   
@@ -425,7 +420,7 @@ class _ModelLocator():
 			def __init__(self, file_object):
 				self.igLocNameHash = read_uint(file_object)
 				self.igLocNameOffset = read_uint(file_object)
-				self.igLocParentID = read_uint(file_object)
+				self.igLocParentId = read_uint(file_object)
 				self.null = read_uint(file_object)
 
 				file_object.seek(0x30, 1)   #matrix
@@ -436,7 +431,7 @@ class _ModelLocatorLookup():
 		class _ModelLocatorLookupTable():
 			def __init__(self, file_object):
 				self.igLocHash = read_uint(file_object)
-				self.igLocParentID = read_uint(file_object)
+				self.igLocParentId = read_uint(file_object)
 		self.ModelLocatorLookupList = [_ModelLocatorLookupTable(file_object) for x in range(section.length // 0x08)]
 class _ModelLook():
 	def __init__(self, section, file_object):
@@ -613,7 +608,7 @@ class _ModelSubset():
 				self.ukw8 = read_ushort(file_object)
 				self.ukw9 = read_byte(file_object)  			#11
 				self.modelGPUSkinFlag = read_byte(file_object)  #if subset uses ModelGPUSkin
-				self.materialID = read_ushort(file_object)
+				self.materialId = read_ushort(file_object)
 				self.skinBatchIndex = read_ushort(file_object)
 				self.skinBatchCount = read_byte(file_object)
 				self.ukw10 = read_byte(file_object) 			#related to skinBatchCount?
@@ -653,7 +648,7 @@ class _707f1b58():
 				self.jointNameHash = read_uint(file_object)
 				self.jointIndex = read_ushort(file_object)
 				self.ukw2 = read_ushort(file_object)		#id?
-				self.jointParentID = read_ushort(file_object)
+				self.jointParentId = read_ushort(file_object)
 				self.jointListIndex = read_ushort(file_object)
 				self.jointListCount = read_ushort(file_object)
 				self.ukw6 = read_ushort(file_object)		#null?
@@ -753,8 +748,11 @@ class _fb7f6a48():
 clean_scene()
 os.system("cls")
 
-#filePath = r"D:\models\ripped\ratchet and clank rift apart\characters\hero\hero_ratchet\hero_ratchet.model"
-filePath = r"D:\models\ripped\ratchet and clank rift apart\characters\hero\hero_rivet\hero_rivet.model"
+filePath = r"D:\models\ripped\ratchet and clank rift apart\characters\hero\hero_ratchet\hero_ratchet.model"
+#filePath = r"D:\models\ripped\ratchet and clank rift apart\characters\hero\hero_rivet\hero_rivet.model"
+#filePath = r"D:\games\ps5\PPSA01474_almost_complete\PPSA01474\extracted\d\model\equipment\projectile\proj_ryno\jak\proj_ryno_jak.model"
+#filePath = r"D:\games\ps5\PPSA01474_almost_complete\PPSA01474\extracted\d\model\equipment\projectile\proj_ryno\slycooper\proj_ryno_slycooper.model"
+#filePath = r"D:\games\ps5\PPSA01474_almost_complete\PPSA01474\extracted\d\model\characters\npc\npc_malori\npc_malori.model"
 f = open(filePath, "rb")
 
 _1TAD = read_fixed_string(f, 4)
@@ -828,6 +826,53 @@ modelScale = 1
 subsetCollection = bpy.data.collections.new("subsets")  		   #create collection within blender
 bpy.context.scene.collection.children.link(subsetCollection)	   #add collection to scene
 
+##################################################################
+# Skeleton
+##################################################################
+armature_obj = bpy.data.objects.new("Armature", bpy.data.armatures.new("Armature"))     #create armature object
+bpy.context.scene.collection.objects.link(armature_obj)                                 #link armature object to scene
+bpy.context.view_layer.objects.active = armature_obj                                    #focus on armature object
+bpy.ops.object.mode_set(mode='EDIT')                                                    #set scene to edit mode
+
+armature_obj.show_in_front = False
+armature_obj.data.display_type = 'STICK'
+
+boneNameList = []
+
+f.seek(ModelBindPose.ModelBindPoseOffset)
+for x in range(ModelJointHierarchy.ModelJointCount):
+   m11 = read_float(f); m12 = read_float(f); m13 = read_float(f); m14 = read_float(f)
+   m21 = read_float(f); m22 = read_float(f); m23 = read_float(f); m24 = read_float(f)
+   m31 = read_float(f); m32 = read_float(f); m33 = read_float(f); m34 = read_float(f)
+
+alignOffset(f, tell(f) - ModelBindPose.ModelBindPoseOffset, 0x40)
+for x in range(ModelJointHierarchy.ModelJointCount):
+   modelJoint = ModelJoint.ModelJointList[x]
+
+   boneNameList.append(getString(f, modelJoint.jointNameOffset))
+   
+   m11 = read_float(f); m12 = read_float(f); m13 = read_float(f); m14 = read_float(f)
+   m21 = read_float(f); m22 = read_float(f); m23 = read_float(f); m24 = read_float(f)
+   m31 = read_float(f); m32 = read_float(f); m33 = read_float(f); m34 = read_float(f)
+   m41 = read_float(f); m42 = read_float(f); m43 = read_float(f); m44 = read_float(f)
+   
+   rot = Matrix(([m11, m21, m31],[m12, m22, m32],[m13, m23, m33]))
+   pos = Vector([m41, m42, m43]) * modelScale
+   scl = Vector([1.0,1.0,1.0])
+   
+   bone = armature_obj.data.edit_bones.new(getString(f, modelJoint.jointNameOffset))
+   bone.use_connect = False
+   bone.head = (0,0,0)
+   bone.tail = (0,0.025,0)        #bone.use_connect prevents bone from being deleted when this is set to 0
+   
+   armature_obj.data.edit_bones.active = bone
+   
+   bone.matrix = Matrix.LocRotScale(pos,rot,scl).inverted()
+   
+   if modelJoint.parentId != 65535: bone.parent = armature_obj.data.edit_bones[modelJoint.parentId]
+        
+bpy.ops.object.mode_set(mode = 'OBJECT')
+
 lookGroupSelection = 0
 lookSelection = 0
 lodSelection = 0
@@ -839,18 +884,16 @@ subsetSelectionList = [23,26]
 
 subsetSelection = ModelLook.ModelLookList[lookSelection][lodSelection]
 
-for x in range(subsetSelection.subsetIndex, (subsetSelection.subsetIndex + subsetSelection.subsetCount)):
 #for x in range(len(ModelSubset.ModelSubsetList)):
-# for x in subsetSelectionList:
+#for x in subsetSelectionList:
+for x in range(subsetSelection.subsetIndex, (subsetSelection.subsetIndex + subsetSelection.subsetCount)):
 	modelSubset = ModelSubset.ModelSubsetList[x]	
-	
-	#print("0x{0:04x}".format(x))
 	
 	vertexList = []
 	normalList = []
 	uvList = []
 	
-	f.seek(ModelMaterial.ModelMaterialOffset + (0x10 * modelSubset.materialID))
+	f.seek(ModelMaterial.ModelMaterialOffset + (0x10 * modelSubset.materialId))
 	materialPath = getString(f, read_ulonglong(f))
 	materialName = getString(f, read_ulonglong(f))
 	
@@ -878,7 +921,31 @@ for x in range(subsetSelection.subsetIndex, (subsetSelection.subsetIndex + subse
 		if modelSubset.ukw9 == 0x01: indexList.append([fa - modelSubset.vertexIndex,fb - modelSubset.vertexIndex,fc - modelSubset.vertexIndex])
 		else: indexList.append([fa,fb,fc])
 	
-	meshName = getString(f, ModelLookBuilt.ModelLookBuiltList[lookSelection].modelLookNameOffset)
+	boneIndicesList = []
+	boneWeightsList = []
+	#print("skinBatchIndex: {0:x} skinBatchCount: {1:x}".format(modelSubset.skinBatchIndex, modelSubset.skinBatchCount))
+	for i in range(modelSubset.skinBatchIndex, modelSubset.skinBatchIndex + modelSubset.skinBatchCount):
+		modelSkinBatch = ModelSkinBatch.ModelSkinBatchList[i]
+		# print("skinDataOffset: {0:08x}  ukw: {1:04x}  skinVertexCount: {2:04x}  skinVertexIndex: {3:04x}".format((modelSkinBatch.skinDataOffset + ModelSkinData.ModelSkinDataOffset), modelSkinBatch.ukw, modelSkinBatch.skinVertexCount, modelSkinBatch.skinVertexIndex))
+
+		f.seek (modelSkinBatch.skinJointRemapOffset)
+		boneMap = [read_ushort(f) for j in range(modelSkinBatch.skinJointRemapCount)] if (modelSkinBatch.skinJointRemapCount > 0) else [j for j in range(ModelJointHierarchy.ModelJointCount)]
+
+		f.seek(modelSkinBatch.skinDataOffset + ModelSkinData.ModelSkinDataOffset)
+		j = 0
+		while j < modelSkinBatch.skinVertexCount:
+			influenceCount = read_byte(f)
+			for k in range(0x10):               #skin data is grouped up in bundles of 0x10 up until skinVertexCount
+				bones = [] ; weights = []
+				for l in range(influenceCount + 1):   #1 - 12
+					bones.append (boneMap[read_byte(f)]) ; weights.append (read_byte(f) / 256.0 if (influenceCount > 0) else 1.0)
+				boneIndicesList.append(bones)
+				boneWeightsList.append(weights)
+				j += 1
+				if j >= modelSkinBatch.skinVertexCount: break
+	
+
+	#meshName = getString(f, ModelLookBuilt.ModelLookBuiltList[lookSelection].modelLookNameOffset)
 	#meshName = materialName
 	meshName = "{0:02d}".format(x)
 	#meshName = str(modelSubset.ukw10)
@@ -895,14 +962,25 @@ for x in range(subsetSelection.subsetIndex, (subsetSelection.subsetIndex + subse
 	mesh_obj = bpy.data.objects.new(meshName, new_mesh)
 	subsetCollection.objects.link(mesh_obj)
 
-	# mesh_obj.scale.x = ModelBuilt.modelScale
-	# mesh_obj.scale.y = ModelBuilt.modelScale
-	# mesh_obj.scale.z = ModelBuilt.modelScale
+	mod = mesh_obj.modifiers.new("Armature", 'ARMATURE')
+	mod.object = armature_obj
 
-	# mesh_obj.shape_key_add(name='Basis',from_mix=False)
-	# mesh_obj.shape_key_add(name='Basis1',from_mix=False)
-	# print(len(mesh_obj.data.shape_keys.key_blocks))
+	for node in armature_obj.data.bones:
+		mesh_obj.vertex_groups.new(name = node.name)
 
-	buildMorphs(mesh_obj, ModelAnimMorphInfo, x)
+	for i in range(modelSubset.vertexCount): #per vertex
+		bones = boneIndicesList[i]
+		weights = boneWeightsList[i]
+		for j in range(len(weights)): # 1 through 8
+			if weights[j] == 0: continue
+			mesh_obj.vertex_groups[int(bones[j])].add([i], weights[j], 'ADD')
+
+
+	#if 'ModelAnimMorphInfo' in locals():
+		#buildMorphs(mesh_obj, ModelAnimMorphInfo, x)
+
+bpy.ops.object.mode_set(mode = 'OBJECT')
+
+	
 
 print("Last read @ {0:x}".format(tell(f)))
